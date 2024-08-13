@@ -1,25 +1,20 @@
-__all__ = ("web3", )
-
-import os
-from web3 import Web3
-from utils import read_json
-from dotenv import load_dotenv
-from data.config import wallet, arb_rpc
+from decimal import Decimal
 
 
-load_dotenv()
-PRIMARY_KEY = os.getenv('PRIMARY_KEY')
+class Token:
+    def __init__(self, name: str, address: str, balance: int) -> None:
+        name = name.upper()
+        self.name = name
+        self.address = address
+        self.balance = balance
+
+    def __str__(self) -> str:
+        return f"Name: {self.name} | {self.address} | Balance: {self.balance}"
 
 
-web3 = Web3(Web3.HTTPProvider(endpoint_uri=arb_rpc))
-print(f"Arb Is Connected: {web3.is_connected()}")
+class Tokens:
+    ETH = Token(name="ETH", address="0x0000000000000000", balance=100000)
+    USDC = Token(name="USDC", address="0x0000000000000000", balance=100000)
 
-print(f"Current Gas: {Web3.from_wei(web3.eth.gas_price, 'gwei')} gwei")
 
-
-print(f"hhhscvx [Big Whale Crypto Influencer] wallet: {Web3.from_wei(web3.eth.get_balance(wallet), 'ether')} ETH")
-
-usdc_contract_address = Web3.to_checksum_address("0xaf88d065e77c8cc2239327c5edb3a432268e5831")
-token_abi = read_json("data/abis/token.json")
-usdc_contract = web3.eth.contract(address=usdc_contract_address, abi=token_abi)
-print(usdc_contract.functions.balanceOf(wallet).call())
+print(Tokens.ETH)

@@ -250,6 +250,14 @@ docs = ["sphinx (>=6.0.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-rtd-theme 
 test = ["hypothesis (>=4.43.0)", "mypy (==1.5.1)", "pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)"]
 
 [[package]]
+name = "fake-useragent"
+version = "1.5.1"
+description = "Up-to-date simple useragent faker with real world database"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "frozenlist"
 version = "1.4.1"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -528,7 +536,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "7245e29d6c149cee61a2f5ac234df9c13a8fa87374fcf50cae451e214261c2f5"
+content-hash = "9fa7c9ed7a75472498d176ddd0719a63ff274a48b126e5b02bf781dead4c371f"
 
 [metadata.files]
 aiohappyeyeballs = []
@@ -548,6 +556,7 @@ eth-keys = []
 eth-rlp = []
 eth-typing = []
 eth-utils = []
+fake-useragent = []
 frozenlist = []
 hexbytes = []
 idna = []
