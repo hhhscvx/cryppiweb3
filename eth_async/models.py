@@ -2,6 +2,7 @@ from decimal import Decimal
 from dataclasses import dataclass
 
 from web3 import Web3
+from eth_typing import ChecksumAddress
 import requests
 
 from . import exceptions
@@ -18,7 +19,7 @@ class TokenAmount:
                 self.Wei: int = int(amount)
                 self.Ether: Decimal = Decimal(str(amount)) / 10 ** decimals
             case False:
-                self.Wei: int = int(Decimal(str(amount) * 10 ** decimals))
+                self.Wei: int = int(Decimal(str(amount)) * 10 ** decimals)
                 self.Ether: Decimal = Decimal(str(amount))
 
         self.decimals = decimals
@@ -212,7 +213,7 @@ class Networks:
         explorer='https://moonscan.io/',
     )
 
-    # todo: сделать самостоятельно
+    
     Fantom = Network(
         name='fantom',
         rpc='https://rpc.ftm.tools',
@@ -221,7 +222,7 @@ class Networks:
         coin_symbol="FTM"
     )
 
-    # todo: сделать самостоятельно
+    
     Celo = Network(
         name='celo',
         rpc='https://forno.celo.org',
@@ -230,7 +231,7 @@ class Networks:
         coin_symbol="FTCELOM"
     )
 
-    # todo: сделать самостоятельно
+    
     Gnosis = Network(
         name='gnosis',
         rpc='https://rpc.gnosischain.com',
@@ -239,7 +240,7 @@ class Networks:
         coin_symbol="XDAI"
     )
 
-    # todo: сделать самостоятельно
+    
     HECO = Network(
         name='HECO',
         rpc='https://http-mainnet.hecochain.com',
@@ -258,7 +259,7 @@ class Networks:
         explorer='https://goerli.etherscan.io/',
     )
 
-    # todo: сделать самостоятельно
+    
     Sepolia = Network(
         name='sepolia',
         rpc="https://rpc.sepolia.org",
@@ -266,3 +267,38 @@ class Networks:
         tx_type=2,
         coin_symbol="ETH"
     )
+
+
+class RawContract:
+    title: str
+    address: ChecksumAddress
+    abi: list[dict[str]]
+
+    def __init__(self, title: str, address: ChecksumAddress, abi: list[dict[str]] | str) -> None:
+        self.title = title
+        self.address = address
+        self.abi = abi
+
+
+@dataclass
+class CommonValue:
+    Null: str = '0x0000000000000000000000000000000000000000000000000000000000000000'
+    InfinityStr: str = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    InfinityInt: int = int('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
+
+
+class TxArgs:
+    def __init__(self, **kwargs) -> None:
+        """
+        Args:
+            **kwargs: named arguments of a contract transaction
+        """
+        self.__dict__.update(kwargs)
+
+    def list(self) -> list:
+        """Get list of transaction arguments"""
+        return list(self.__dict__.values())
+
+    def tuple(self) -> tuple:
+        """Get tuple of transaction arguments"""
+        return tuple(self.__dict__.values())

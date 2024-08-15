@@ -2,6 +2,7 @@ from random import randint
 
 from web3 import Web3
 from web3.eth.async_eth import AsyncEth
+from eth_account.signers.local import LocalAccount
 from fake_useragent import UserAgent
 import requests
 
@@ -31,7 +32,7 @@ class Client:
                 self.proxy = f"http://{self.proxy}"
             if check_proxy:
                 ipaddr = requests.get('https://eth0.me/',
-                                    proxies={'http': self.proxy, 'https': self.proxy}, timeout=10).text.strip()
+                                      proxies={'http': self.proxy, 'https': self.proxy}, timeout=10).text.strip()
                 if ipaddr not in proxy:
                     raise InvalidProxy(f"Your Proxy didn`t work! Your IP: {ipaddr}")
         self.w3 = Web3(
@@ -44,9 +45,9 @@ class Client:
         )
         self.private_key = private_key
         if self.private_key:
-            self.account = self.w3.eth.account.from_key(private_key=self.private_key)
+            self.account: LocalAccount = self.w3.eth.account.from_key(private_key=self.private_key)
         elif private_key is None:
-            self.account = self.w3.eth.account.create(extra_entropy=str(randint(1, 999_999_999)))
+            self.account: LocalAccount = self.w3.eth.account.create(extra_entropy=str(randint(1, 999_999_999)))
         else:
             self.account = None
 
