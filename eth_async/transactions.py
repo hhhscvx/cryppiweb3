@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from hexbytes import HexBytes
 
-from web3 import Web3
+from web3 import AsyncWeb3, Web3
+from web3.contract.async_contract import AsyncContract
 from web3.types import TxParams, _Hash32, TxData, TxReceipt
 from eth_account.datastructures import SignedTransaction
 
@@ -44,12 +45,16 @@ class Tx:
         }
         return self.params
 
-    async def wait_for_receipt(
-            self, client: Client, timeout: int | float = 120, poll_latency: float = 0.1
-    ) -> dict[str, Any]:
-        self.receipt = dict(await client.w3.eth.wait_for_transaction_receipt(
-            transaction_hash=self.hash, timeout=timeout, poll_latency=poll_latency
-        ))
+    async def wait_for_receipt(self, client: Client, timeout: int | float = 120,
+                               poll_latency: float = 0.1) -> dict[str, Any]:
+
+        self.receipt = client.transactions.wait_for_receipt(
+            w3=client.w3,
+            tx_hash=self.hash,
+            timeout=timeout,
+            poll_latency=poll_latency
+        )
+        return self.receipt
 
     async def decode_input_data(self):
         pass
@@ -82,22 +87,23 @@ class Transactions:
     async def auto_add_params(self, tx_params: TxParams) -> TxParams:
         """Дополнение необходимых параметров для транзакции"""
         if 'chainId' not in tx_params:
-            tx_params['chainId'] = self.client.w3.eth.chain_id
+            tx_params['chainId'] = await self.client.w3.eth.chain_id
 
-        if 'nonce' not in tx_params:
+        if not tx_params.get('nonce'):
             tx_params['nonce'] = await self.client.wallet.nonce()
+
         if 'gasPrice' not in tx_params and 'maxFeePerGas' not in tx_params:
             gas_price = (await self.gas_price()).Wei
             if self.client.network.tx_type == 2:
-                TxParams['maxFeePerGas'] = gas_price
+                tx_params['maxFeePerGas'] = gas_price
             else:
                 tx_params['gasPrice'] = gas_price
 
         if 'gasPrice' in tx_params and not int(tx_params['gas']):
             tx_params['gas'] = (await self.gas_price()).Wei
 
-        if 'maxFeePerGas' in tx_params and 'MaxPriorityFeePerGas' not in tx_params:
-            tx_params['MaxPriorityFeePerGas'] = (await self.max_priority_fee()).Wei
+        if 'maxFeePerGas' in tx_params and 'maxPriorityFeePerGas' not in tx_params:
+            tx_params['maxPriorityFeePerGas'] = (await self.max_priority_fee()).Wei
             tx_params['maxFeePerGas'] = tx_params['maxFeePerGas'] + tx_params['maxPriorityFeePerGas']
 
         if 'gas' not in tx_params or not int(tx_params['gas']):
@@ -130,22 +136,23 @@ class Transactions:
                 owner=owner,
                 spender=spender
             ).call(),
-            decimals=await contract.functions.decimals().call(), wei=True
+            decimals=await self.client.transactions.get_decimals(contract=contract), wei=True
         )
 
-    async def wait_for_receipt(
-            self, tx_hash: str | _Hash32, timeout: int | float = 120, poll_latence: float = 0.1
-    ) -> dict[str, Any]:
+    @staticmethod
+    async def wait_for_receipt(w3: Web3 | AsyncWeb3, tx_hash: str | _Hash32,
+                               timeout: int | float = 120,
+                               poll_latency: float = 0.1) -> dict[str, Any]:
         """Получение чека транзакции, проверка что она прошла успешно"""
-        return dict(await self.client.w3.eth.wait_for_transaction_receipt(
-            transaction_hash=tx_hash, timeout=timeout, poll_latency=poll_latence))
+        return dict(await w3.eth.wait_for_transaction_receipt(
+            transaction_hash=tx_hash, timeout=timeout, poll_latency=poll_latency))
 
     async def approve(
-        self, token: Contract, spender: Contract, amount: Amount | None = None,
-        gas_price: GasPrice | None = None, gas_limit: GasLimit | None = None,
-        nonce: int | None = None, check_gas_price: bool = False
-    ) -> Tx:
+            self, token: Contract, spender: Contract, amount: Amount | None = None,
+            gas_limit: GasLimit | None = None, nonce: int | None = None) -> Tx:
         """Апрув токена для той или иной свапалки"""
+
+        spender: Contract = Web3.to_checksum_address(value=spender)
         contract_addr, _ = await self.client.contracts.get_contract_attributes(contract=token)
         contract: Contract = await self.client.contracts.default_token(address=contract_addr)
 
@@ -153,47 +160,31 @@ class Transactions:
             amount = CommonValue.InfinityInt
 
         if isinstance(amount, (int, float)):
-            amount = TokenAmount(amount=amount, decimals=contract.functions.decimals().call()).Wei
+            amount = TokenAmount(amount=amount, decimals=await self.client.transactions.get_decimals(contract=contract)).Wei
         else:
             amount = amount.Wei
 
-        spender: Contract = Web3.to_checksum_address(value=spender)
-        current_gas_price = await self.gas_price()
-        if not gas_price:
-            gas_price = await current_gas_price
-        elif gas_price:
-            if isinstance(gas_price, int):
-                gas_price = TokenAmount(amount=gas_price, wei=True)
-
-        if check_gas_price and current_gas_price.Wei > gas_price.Wei:
-            raise GasTooHigh()
-
-        if not nonce:
-            nonce = await self.client.wallet.nonce()
+        tx_args = TxArgs(spender=spender,
+                         amount=amount)
 
         tx_params = {
-            'chainId': self.client.network.chain_id,
             'nonce': nonce,
-            'from': self.client.account.address,
             'to': contract.address,
-            # TxArgs - просто args в кортеже, нужен только для удобства, чтоб аргументы могли быть именованные
             'data': contract.encodeABI('approve',
-                                       args=TxArgs(spender=spender,
-                                                   amount=amount).tuple())
+                                       args=tx_args.tuple())
         }
-        if self.client.network.tx_type == 2:
-            tx_params['maxPriorityFeePerGas'] = (await self.client.transactions.max_priority_fee()).Wei
-            tx_params['maxFeePerGas'] = gas_price.Wei + tx_params['maxPriorityFeePerGas']
-        else:
-            tx_params['gasPrice'] = gas_price.Wei
 
-        if not gas_limit:
-            gas_limit = await self.estimate_gas(tx_params=tx_params)
-        elif isinstance(gas_limit, int):
-            gas_limit = TokenAmount(amount=gas_limit, wei=True)
+        if gas_limit:
+            if isinstance(gas_limit, int):
+                gas_limit = TokenAmount(amount=gas_limit, wei=True)
+            tx_params['gas'] = gas_limit
 
-        tx_params['gas'] = gas_limit.Wei
         return await self.sign_and_send(tx_params=tx_params)
+
+    async def get_decimals(self, contract: Contract) -> int:
+        contract_address, _ = await self.client.contracts.get_contract_attributes(contract=contract)  # контакт токена
+        contract: AsyncContract = await self.client.contracts.default_token(contract_address=contract_address)
+        return await contract.functions.decimals().call()
 
     async def sign_message(self):
         pass

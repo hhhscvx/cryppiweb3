@@ -19,7 +19,7 @@ class Shiba(Base):
         eth_price = await self.get_token_price(token_symbol='ETH')
         min_to_amount = TokenAmount(
             amount=eth_price * float(amount.Ether) * (1 - slippage / 100),
-            decimals=await self.get_decimals(contract_address=to_token.address)
+            decimals=await self.client.transactions.get_decimals(contract=to_token)
         )
         deadline = int(time()) + 600  # 10 минут с текущего момента
 
@@ -35,6 +35,8 @@ class Shiba(Base):
             data=contract.encodeABI('swapExactETHForTokens', args=args.tuple()),
             value=amount.Wei
         )
+
+        await self.client.transactions.auto_add_params(tx_params=tx_params)
 
         gas = await self.client.transactions.estimate_gas(tx_params=tx_params)
         if gas:

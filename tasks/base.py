@@ -55,7 +55,3 @@ class Base:
         )
         receipt = await tx.wait_for_receipt(client=self.client, timeout=300)
         return True if receipt else False
-
-    async def get_decimals(self, contract_address: str) -> int:
-        contract: AsyncContract = await self.client.contracts.default_token(contract_address)
-        return await contract.functions.decimals().call()
