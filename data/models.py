@@ -23,3 +23,21 @@ class Contracts(Singleton):
         address="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         abi=DefaultABIs.Token
     )
+
+    ZKSYNC_MUTE = RawContract(
+        title="mute",
+        address="0x8B791913eB07C32779a16750e3868aA8495F5964",
+        abi=read_json(path=(ABIS_DIR, 'mute.json'))
+    )
+
+    ZKSYNC_WETH = RawContract(
+        title='USDC',
+        address='0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91',
+        abi=read_json(path=(ABIS_DIR, 'WETH.json'))
+    )
+
+    ZKSYNC_USDC = RawContract(
+        title='USDC',
+        address='0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4',
+        abi=DefaultABIs.Token
+    )

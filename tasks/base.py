@@ -55,3 +55,9 @@ class Base:
         )
         receipt = await tx.wait_for_receipt(client=self.client, timeout=300)
         return True if receipt else False
+
+    async def get_token_info(self, contract_address):
+        contract: AsyncContract = await self.client.contracts.default_token(contract_address)
+        print('name', await contract.functions.name().call())
+        print('symbol', await contract.functions.symbol().call())
+        print('decimals', await contract.functions.decimals().call())

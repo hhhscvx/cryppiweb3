@@ -5,6 +5,7 @@ from hexbytes import HexBytes
 from web3 import AsyncWeb3, Web3
 from web3.contract.async_contract import AsyncContract
 from web3.types import TxParams, _Hash32, TxData, TxReceipt
+from web3.middleware.geth_poa import geth_poa_middleware
 from eth_account.datastructures import SignedTransaction
 
 from .models import TokenAmount, CommonValue, TxArgs
@@ -75,7 +76,32 @@ class Transactions:
         gas = await self.client.w3.eth.gas_price
         return TokenAmount(amount=gas, wei=True)
 
-    async def max_priority_fee(self) -> TokenAmount:
+    async def max_priority_fee(self, block: dict | None = None) -> TokenAmount:
+        w3 = Web3(Web3.HTTPProvider(self.client.network.rpc))
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+        if not block:
+            block = w3.eth.get_block('latest')
+
+        block_number = block['number']
+        latest_block_transactions_count = w3.eth.get_block_transaction_count(block_number)
+        max_priority_fee_per_gas_lst = []
+        for i in range(latest_block_transactions_count):  # пробегаемся по всем транзакциям в блоке
+            try:
+                transaction = w3.eth.get_transaction_by_block(block_number, i)
+                if transaction.get('maxPriorityFeePerGas'):
+                    max_priority_fee_per_gas_lst.append(transaction['maxPriorityFeePerGas'])
+            except:
+                continue
+
+        if not max_priority_fee_per_gas_lst:
+            max_priority_fee_per_gas = 0
+        else:
+            max_priority_fee_per_gas_lst.sort()
+            max_priority_fee_per_gas = max_priority_fee_per_gas_lst[len(max_priority_fee_per_gas_lst) // 2]
+        return TokenAmount(amount=max_priority_fee_per_gas, wei=True)
+
+    async def max_priority_fee_(self) -> TokenAmount:
         max_priority_fee = await self.client.w3.eth.max_priority_fee
         return TokenAmount(amount=max_priority_fee, wei=True)
 

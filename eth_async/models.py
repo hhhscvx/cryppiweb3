@@ -195,6 +195,15 @@ class Networks:
         explorer='https://polygonscan.com/',
     )
 
+    ZkSync = Network(
+        name='zksync',
+        rpc="https://mainnet.era.zksync.io",
+        chain_id=324,
+        tx_type=2,
+        coin_symbol='ETH',
+        explorer="https://explorer.zksync.io",
+    )
+
     Avalanche = Network(
         name='avalanche',
         rpc='https://rpc.ankr.com/avalanche/',
@@ -213,7 +222,6 @@ class Networks:
         explorer='https://moonscan.io/',
     )
 
-    
     Fantom = Network(
         name='fantom',
         rpc='https://rpc.ftm.tools',
@@ -222,7 +230,6 @@ class Networks:
         coin_symbol="FTM"
     )
 
-    
     Celo = Network(
         name='celo',
         rpc='https://forno.celo.org',
@@ -231,7 +238,6 @@ class Networks:
         coin_symbol="FTCELOM"
     )
 
-    
     Gnosis = Network(
         name='gnosis',
         rpc='https://rpc.gnosischain.com',
@@ -240,7 +246,6 @@ class Networks:
         coin_symbol="XDAI"
     )
 
-    
     HECO = Network(
         name='HECO',
         rpc='https://http-mainnet.hecochain.com',
@@ -259,7 +264,6 @@ class Networks:
         explorer='https://goerli.etherscan.io/',
     )
 
-    
     Sepolia = Network(
         name='sepolia',
         rpc="https://rpc.sepolia.org",
